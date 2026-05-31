@@ -25,19 +25,12 @@ def chat():
 
     try:
         if imagen_b64:
-            contenido = []
-            contenido.append({
-                "type": "text",
-                "text": mensaje if mensaje else "Describe esta imagen en detalle."
-            })
-            contenido.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": "data:" + imagen_tipo + ";base64," + imagen_b64
-                }
-            })
+            contenido = [
+                {"type": "text", "text": mensaje if mensaje else "Describe esta imagen en detalle."},
+                {"type": "image_url", "image_url": {"url": "data:" + imagen_tipo + ";base64," + imagen_b64}}
+            ]
             messages = [{"role": "user", "content": contenido}]
-            model = "meta-llama/llama-4-scout-17b-16e-instruct"
+            model = "llama-4-scout-17b-16e-instruct"
         else:
             messages = [{"role": "user", "content": mensaje}]
             model = "llama-3.3-70b-versatile"
@@ -47,8 +40,7 @@ def chat():
             max_tokens=1024,
             messages=messages
         )
-        respuesta = response.choices[0].message.content
-        return jsonify({"respuesta": respuesta})
+        return jsonify({"respuesta": response.choices[0].message.content})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
