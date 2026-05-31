@@ -30,13 +30,11 @@ def chat():
                 {"type": "image_url", "image_url": {"url": "data:" + imagen_tipo + ";base64," + imagen_b64}}
             ]
             messages = [{"role": "user", "content": contenido}]
-            model = "llama-4-scout-17b-16e-instruct"
         else:
             messages = [{"role": "user", "content": mensaje}]
-            model = "llama-3.3-70b-versatile"
 
         response = client.chat.completions.create(
-            model=model,
+            model="llama-3.3-70b-versatile",
             max_tokens=1024,
             messages=messages
         )
