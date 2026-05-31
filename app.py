@@ -1,13 +1,18 @@
 import os
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from groq import Groq
 
 app = Flask(__name__)
 CORS(app)
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-client = Groq(api_key=GROQ_API_KEY)
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Modelo para texto
+MODEL_TEXTO = "google/gemini-2.0-flash-exp:free"
+# Modelo para visión (imágenes)
+MODEL_VISION = "google/gemini-2.0-flash-exp:free"
 
 @app.route("/")
 def home():
@@ -17,6 +22,7 @@ def home():
 def chat():
     data = request.get_json()
     mensaje = data.get("mensaje", "")
+    historial = data.get("historial", [])
     imagen_b64 = data.get("imagen", None)
     imagen_tipo = data.get("imagen_tipo", "image/jpeg")
 
@@ -24,25 +30,38 @@ def chat():
         return jsonify({"error": "Mensaje vacío"}), 400
 
     try:
+        # Construir el mensaje actual
         if imagen_b64:
-            # Modelo con visión para imágenes
             contenido = [
                 {"type": "text", "text": mensaje if mensaje else "Describe esta imagen en detalle."},
                 {"type": "image_url", "image_url": {"url": "data:" + imagen_tipo + ";base64," + imagen_b64}}
             ]
-            messages = [{"role": "user", "content": contenido}]
-            model = "meta-llama/llama-4-scout-17b-16e-instruct"
+            model = MODEL_VISION
         else:
-            # Modelo de texto normal
-            messages = [{"role": "user", "content": mensaje}]
-            model = "llama-3.3-70b-versatile"
+            contenido = mensaje
+            model = MODEL_TEXTO
 
-        response = client.chat.completions.create(
-            model=model,
-            max_tokens=1024,
-            messages=messages
-        )
-        return jsonify({"respuesta": response.choices[0].message.content})
+        # Añadir historial + mensaje actual
+        messages = historial + [{"role": "user", "content": contenido}]
+
+        headers = {
+            "Authorization": "Bearer " + OPENROUTER_API_KEY,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://mi-ia-app.github.io",
+            "X-Title": "IA Chat iPad"
+        }
+
+        payload = {
+            "model": model,
+            "max_tokens": 2048,
+            "messages": messages
+        }
+
+        response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        result = response.json()
+        respuesta = result["choices"][0]["message"]["content"]
+        return jsonify({"respuesta": respuesta})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
