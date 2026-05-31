@@ -7,7 +7,6 @@ app = Flask(__name__)
 CORS(app)
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-
 client = Groq(api_key=GROQ_API_KEY)
 
 @app.route("/")
@@ -27,10 +26,10 @@ def chat():
     try:
         if imagen_b64:
             contenido = []
-            if mensaje:
-                contenido.append({"type": "text", "text": mensaje})
-            else:
-                contenido.append({"type": "text", "text": "Describe esta imagen en detalle."})
+            contenido.append({
+                "type": "text",
+                "text": mensaje if mensaje else "Describe esta imagen en detalle."
+            })
             contenido.append({
                 "type": "image_url",
                 "image_url": {
@@ -38,7 +37,7 @@ def chat():
                 }
             })
             messages = [{"role": "user", "content": contenido}]
-            model = "llama-4-scout-17b-16e-instruct"
+            model = "meta-llama/llama-4-scout-17b-16e-instruct"
         else:
             messages = [{"role": "user", "content": mensaje}]
             model = "llama-3.3-70b-versatile"
