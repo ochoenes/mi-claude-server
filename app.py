@@ -9,11 +9,6 @@ CORS(app)
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# Modelo para texto
-MODEL_TEXTO = "google/gemini-2.0-flash-exp:free"
-# Modelo para visión (imágenes)
-MODEL_VISION = "google/gemini-2.0-flash-exp:free"
-
 @app.route("/")
 def home():
     return "Servidor funcionando ✓"
@@ -23,6 +18,7 @@ def chat():
     data = request.get_json()
     mensaje = data.get("mensaje", "")
     historial = data.get("historial", [])
+    modelo = data.get("modelo", "google/gemini-2.0-flash-exp:free")
     imagen_b64 = data.get("imagen", None)
     imagen_tipo = data.get("imagen_tipo", "image/jpeg")
 
@@ -30,34 +26,30 @@ def chat():
         return jsonify({"error": "Mensaje vacío"}), 400
 
     try:
-        # Construir el mensaje actual
         if imagen_b64:
             contenido = [
                 {"type": "text", "text": mensaje if mensaje else "Describe esta imagen en detalle."},
                 {"type": "image_url", "image_url": {"url": "data:" + imagen_tipo + ";base64," + imagen_b64}}
             ]
-            model = MODEL_VISION
         else:
             contenido = mensaje
-            model = MODEL_TEXTO
 
-        # Añadir historial + mensaje actual
         messages = historial + [{"role": "user", "content": contenido}]
 
         headers = {
             "Authorization": "Bearer " + OPENROUTER_API_KEY,
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://mi-ia-app.github.io",
-            "X-Title": "IA Chat iPad"
+            "HTTP-Referer": "https://ochoenes.github.io",
+            "X-Title": "ochoenes"
         }
 
         payload = {
-            "model": model,
+            "model": modelo,
             "max_tokens": 2048,
             "messages": messages
         }
 
-        response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
+        response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=55)
         response.raise_for_status()
         result = response.json()
         respuesta = result["choices"][0]["message"]["content"]
